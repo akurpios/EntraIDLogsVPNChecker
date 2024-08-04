@@ -8,7 +8,7 @@ echo "By Aleksander Kurpios"
 echo "----------------------------------"
 
 
-#Create Varibles
+#Create Variables
 $CurrentDate = get-date -f dd-MM-yyyy_THH-mm-ss #Get Current date and time
 $AllIPsArray = @() # wipe All IPs Array table
 $UniqueIPsArray = @() # wipe Unique IPs Array table
@@ -34,9 +34,9 @@ $OldfirstLine = Get-Content -Path $MScsvPath | Select-Object -First 1
 [regex]$pattern = "Incoming token type"
 $NewfirstLine = $pattern.replace($OldfirstLine, "Token", 1) 
 
-#Replace "IP Address" with "IP" in file
+#Replace "IP Address" with "IP" in the TempRaw file
 $NewfirstLine = $NewfirstLine.Replace("IP address","IP")
-#Replace "IP Address" with "IP" in file
+#Replace "Date (UTC)" with "Date" in the TempRaw file
 $NewfirstLine = $NewfirstLine.Replace("Date (UTC)","Date")
 
 #Replace 1st line of string
@@ -47,7 +47,7 @@ $x | Out-File $TempMScsvPath
 #Remove duplicated IPs from Fixed CSV
 Import-Csv $TempMScsvPath | Sort-Object "IP" -Unique | Export-Csv -Path $UniqueTempMScsvPath
 
-#Checking size of unique IP list
+#Checking the size of the unique IP list
 
 $CountOfUniqueIPs = (Get-Content $UniqueTempMScsvPath | Measure-Object -Line).Lines
 $CountOfUniqueIPs = $CountOfUniqueIPs
@@ -80,7 +80,7 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
 #Remove duplicates from Exported CSV (Multiple header lines)
 Import-Csv (Get-ChildItem $RawOutPath) | Sort-Object -Unique IP | Export-Csv $OutPath -NoClobber -NoTypeInformation
 
-#Check if Final CSV is correct
+#Check if the Final CSV is correct
 $FinalCSVsize = (Get-Content $OutPath | Measure-Object -Line).Lines
 
 Write-Host "Final file size: " $FinalCSVsize
@@ -93,7 +93,7 @@ else {
     Write-Host "Final CSV is incorrect" -BackgroundColor Red
 }
 
-#Ask if user want to keep temp files
+#Ask if the user wants to keep temp files
 $DeleteTemp = Read-Host "Want to keep temp files [y/n]"
 while($DeleteTemp -ne "y")
 {
@@ -107,7 +107,7 @@ while($DeleteTemp -ne "y")
   Write-Host "Keeping temp files" -BackgroundColor DarkYellow
 }
 
-#Ask if user want to open export location
+#Ask if the user wants to open an export location
 $DeleteTemp = Read-Host "Want to open export location [y/n]"
 while($DeleteTemp -ne "n")
 {
