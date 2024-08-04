@@ -1,14 +1,14 @@
-
 #Wipe terminal
 cls
 
 #Echo
 echo "----------------------------------"
-echo "EntraID Logs VPN checker for VPNAPI.IO"
+echo "EntraID SignIn Logs VPN checker for VPNAPI.IO"
 echo "By Aleksander Kurpios"
 echo "----------------------------------"
 
-#Create Variables
+
+#Create Varibles
 $CurrentDate = get-date -f dd-MM-yyyy_THH-mm-ss #Get Current date and time
 $AllIPsArray = @() # wipe All IPs Array table
 $UniqueIPsArray = @() # wipe Unique IPs Array table
@@ -22,8 +22,9 @@ Write-host "`n`nDirectory path: " $directoryPath "`n`n" #Display work folder
 $TempMScsvPath = "$directoryPath\TempRaw-$CurrentDate.csv" #Set location for Temp CSV
 $TranscriptPatch = "$directoryPath\MsLogsVPNchecker-REPORT$CurrentDate.txt" #Set location for transcript
 $RawOutPath = "$directoryPath\TempResolvedIPs-$CurrentDate.csv"
+$UniqueTempMScsvPath = "$directoryPath\UniqueTempRaw-$CurrentDate.csv" #Set location for Temp Unique IPs CSV
 $OutPath = "$directoryPath\ResolvedIPs-$CurrentDate.csv" #Set OutPath
-$Progress = 0 #Wipe Progress bar status
+$Progress = 1 #Wipe Progress bar status
 
 #Start transcript
 Start-Transcript -Path $TranscriptPatch
@@ -33,7 +34,7 @@ $OldfirstLine = Get-Content -Path $MScsvPath | Select-Object -First 1
 [regex]$pattern = "Incoming token type"
 $NewfirstLine = $pattern.replace($OldfirstLine, "Token", 1) 
 
-#Replace "IP Address" with "IP" in the file
+#Replace "IP Address" with "IP" in file
 $NewfirstLine = $NewfirstLine.Replace("IP address","IP")
 
 #Replace 1st line of string
@@ -41,37 +42,43 @@ $x = Get-Content $MScsvPath
 $x[0] = $NewfirstLine
 $x | Out-File $TempMScsvPath
 
-#Import Fixed CSV and add to Array to get only Unique IPs
-Import-Csv -Path $TempMScsvPath | ForEach-Object {
-    $IP = $_.IP
-    $AllIPsArray += $IP 
-}
-$CountOfAllIPs = $AllIPsArray.Count
-Write-Host "All entries: " $CountOfAllIPs
-$UniqueIPsArray = $AllIPsArray | Select-Object -Unique
-$CountOfUniqueIPs = $UniqueIPsArray.Count
-Write-Host "Unique entries: " $CountOfUniqueIPs
+#Remove duplicated IPs from Fixed CSV
+Import-Csv $TempMScsvPath | Sort-Object "IP" -Unique | Export-Csv -Path $UniqueTempMScsvPath
+
+#Checking size of unique IP list
+
+$CountOfUniqueIPs = (Get-Content $UniqueTempMScsvPath | Measure-Object -Line).Lines
+$CountOfUniqueIPs = $CountOfUniqueIPs
 
 #Checking Unique IPs
-ForEach ($UniqueIP in $UniqueIPsArray){
-  $URL= "https://vpnapi.io/api/"+$UniqueIP+"?key="+$APIKey
+Import-Csv $UniqueTempMScsvPath | ForEach-Object { 
+    $Progress++
+    $Date = $_."Date (UTC)"
+    $IP = $_.IP
+    $Username = $_.Username
+    $URL = "https://vpnapi.io/api/"+$IP+"?key="+$APIKey
+    $Curl = Invoke-RestMethod -Uri $URL
+    write-host "Working for: "$IP
+    echo $Curl
 
-  #Obtain VPN data
-  Invoke-RestMethod -Uri $URL | ConvertTo-Csv >> $RawOutPath -NoTypeInformation
-  $Progress++
-   Write-Progress -activity "Checking Unique IPs" -status "Scanned: $Progress of $($CountOfUniqueIPs)" -percentComplete (($Progress / $CountOfUniqueIPs)  * 100)
+    [PsCustomObject]@{
+        username = $Username;
+        IP = $IP;
+        VPN = $Curl.security.vpn;
+        TOR = $Curl.security.tor;
+        Country = $Curl.location.country;
+        ISP = $Curl.network.autonomous_system_organization;
+
+    } | Export-Csv $RawOutPath -NoTypeInformation -append
+
+     Write-Progress -activity "Checking Unique IPs" -status "Scanned: $Progress of $($CountOfUniqueIPs)" -percentComplete (($Progress / $CountOfUniqueIPs)  * 100)
 }
 
-#Remove duplicates from Exported CSV
- Import-Csv (Get-ChildItem $RawOutPath) | Sort-Object -Unique ip | Export-Csv $OutPath -NoClobber -NoTypeInformation
+#Remove duplicates from Exported CSV (Multiple header lines)
+Import-Csv (Get-ChildItem $RawOutPath) | Sort-Object -Unique IP | Export-Csv $OutPath -NoClobber -NoTypeInformation
 
-#Remove last line in final CSV
-$data = Get-Content $OutPath
-$data[0..($data.count-2)] | Out-File $OutPath
-
-#Check if the Final CSV is correct
+#Check if Final CSV is correct
 $FinalCSVsize = (Get-Content $OutPath | Measure-Object -Line).Lines
-$FinalCSVsize = $FinalCSVsize-1
 
 Write-Host "Final file size: " $FinalCSVsize
 Write-Host "Unique entries: " $CountOfUniqueIPs
@@ -83,7 +90,7 @@ else {
     Write-Host "Final CSV is incorrect" -BackgroundColor Red
 }
 
-#Ask if the user wants to keep temp files
+#Ask if user want to keep temp files
 $DeleteTemp = Read-Host "Want to keep temp files [y/n]"
 while($DeleteTemp -ne "y")
 {
@@ -91,11 +98,22 @@ while($DeleteTemp -ne "y")
       Write-Host "Removing temp files" -BackgroundColor DarkYellow
       Remove-Item -Path $RawOutPath
       Remove-Item -Path $TempMScsvPath
-      exit
+      Remove-Item -Path $UniqueTempMScsvPath
+      break
       }
   Write-Host "Keeping temp files" -BackgroundColor DarkYellow
 }
 
+#Ask if user want to open export location
+$DeleteTemp = Read-Host "Want to open export location [y/n]"
+while($DeleteTemp -ne "n")
+{
+    if ($DeleteTemp -eq 'y') {  
+        Write-Host "Opening export location" -BackgroundColor DarkYellow  
+        ii $directoryPath
+      }
+      break
+}
+
 Write-Host "Script Finished"
-#pause
 Stop-Transcript
