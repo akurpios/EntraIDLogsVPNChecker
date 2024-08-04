@@ -8,9 +8,6 @@ echo "EntraID Logs VPN checker for VPNAPI.IO"
 echo "By Aleksander Kurpios"
 echo "----------------------------------"
 
-#Pause
-pause
-
 #Create Variables
 $CurrentDate = get-date -f dd-MM-yyyy_THH-mm-ss #Get Current date and time
 $AllIPsArray = @() # wipe All IPs Array table
