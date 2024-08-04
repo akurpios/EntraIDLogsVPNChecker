@@ -36,6 +36,8 @@ $NewfirstLine = $pattern.replace($OldfirstLine, "Token", 1)
 
 #Replace "IP Address" with "IP" in file
 $NewfirstLine = $NewfirstLine.Replace("IP address","IP")
+#Replace "IP Address" with "IP" in file
+$NewfirstLine = $NewfirstLine.Replace("Date (UTC)","Date")
 
 #Replace 1st line of string
 $x = Get-Content $MScsvPath
@@ -53,7 +55,7 @@ $CountOfUniqueIPs = $CountOfUniqueIPs
 #Checking Unique IPs
 Import-Csv $UniqueTempMScsvPath | ForEach-Object { 
     $Progress++
-    $Date = $_."Date (UTC)"
+    $Date = $_.Date
     $IP = $_.IP
     $Username = $_.Username
     $URL = "https://vpnapi.io/api/"+$IP+"?key="+$APIKey
@@ -62,6 +64,7 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
     echo $Curl
 
     [PsCustomObject]@{
+        "Date (UTC)" = $Date;
         username = $Username;
         IP = $IP;
         VPN = $Curl.security.vpn;
