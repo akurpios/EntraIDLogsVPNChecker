@@ -108,10 +108,10 @@ while($DeleteTemp -ne "y")
 }
 
 #Ask if the user wants to open an export location
-$DeleteTemp = Read-Host "Want to open export location [y/n]"
-while($DeleteTemp -ne "n")
+$OpenWorkFolder = Read-Host "Want to open export location [y/n]"
+while($OpenWorkFolder -ne "n")
 {
-    if ($DeleteTemp -eq 'y') {  
+    if ($OpenWorkFolder -eq 'y') {  
         Write-Host "Opening export location" -BackgroundColor DarkYellow  
         ii $directoryPath
       }
