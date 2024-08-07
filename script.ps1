@@ -26,7 +26,7 @@ do{
         $RawOutPath = "$directoryPath\TempResolvedIPs-$CurrentDate.csv"
         $UniqueTempMScsvPath = "$directoryPath\UniqueTempRaw-$CurrentDate.csv" #Set location for Temp Unique IPs CSV
         $OutPath = "$directoryPath\ResolvedIPs-$CurrentDate.csv" #Set OutPath
-        $Progress = 1 #Wipe Progress bar status
+        $Progress = 0 #Wipe Progress bar status
         $ScriptGeneratedMScsvPath = "$directoryPath\GeneratedRawMsSignIns-$CurrentDate.csv" #Set location for the Script-generated Ms sign-in logs
         $TempScriptGeneratedMScsvPath = "$directoryPath\TempGeneratedRawMsSignIns-$CurrentDate.csv" #Set location for the Script-generated Ms sign-in logs
 
@@ -50,6 +50,7 @@ do{
 
         #Remove duplicated IPs from Fixed CSV
         Import-Csv $TempMScsvPath | Sort-Object "IP" -Unique | Export-Csv -Path $UniqueTempMScsvPath
+        $CountOfUniqueIPs = (Get-Content $UniqueTempMScsvPath | Measure-Object -Line).Lines
         Break
     }
     if ($autogeneratelogs -eq 'y') {
@@ -128,13 +129,15 @@ do{
 
         #Remove duplicated IPs from Fixed CSV
         Import-Csv $TempScriptGeneratedMScsvPath | Sort-Object "IP" -Unique | Export-Csv -Path $UniqueTempMScsvPath
+        $CountOfUniqueIPs = (Get-Content $UniqueTempMScsvPath | Measure-Object -Line).Lines
+        $CountOfUniqueIPs = $CountOfUniqueIPs-1
         Break
     }
 } while ($autogeneratelogs -ne 'y' -or $autogeneratelogs -ne 'n')
 
 #Checking size of unique IP list
-$CountOfUniqueIPs = (Get-Content $UniqueTempMScsvPath | Measure-Object -Line).Lines
-$CountOfUniqueIPs = $CountOfUniqueIPs-1
+
+
 
 #Checking Unique IPs
 Import-Csv $UniqueTempMScsvPath | ForEach-Object { 
