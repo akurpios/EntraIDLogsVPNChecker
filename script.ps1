@@ -40,8 +40,10 @@ do{
 
         #Replace "IP Address" with "IP" in file
         $NewfirstLine = $NewfirstLine.Replace("IP address","IP")
-        #Replace "IP Address" with "IP" in file
+        #Replace "Date (UTC)" with "Date" in file
         $NewfirstLine = $NewfirstLine.Replace("Date (UTC)","Date")
+        #Replace "Operating System" with "OS" in file
+        $NewfirstLine = $NewfirstLine.Replace("Operating System","OS")
 
         #Replace 1st line of string
         $x = Get-Content $MScsvPath
@@ -108,7 +110,7 @@ do{
         $SetDate = Get-Date($SetDate) -format yyyy-MM-dd
 
         #Get AzureAD data
-        $AADLogsarray = Get-AzureADAuditSignInLogs -Filter "createdDateTime gt $SetDate" | Select CreatedDateTime, UserPrincipalName, IpAddress
+        $AADLogsarray = Get-AzureADAuditSignInLogs -Filter "createdDateTime gt $SetDate" | Select CreatedDateTime, UserPrincipalName, IpAddress,@{Name = 'OS'; Expression = {$_.DeviceDetail.OperatingSystem}}
         $AADLogsarray | Export-Csv $ScriptGeneratedMScsvPath –NoTypeInformation
         Disconnect-AzureAD
         
@@ -121,6 +123,7 @@ do{
         $NewfirstLine = $NewfirstLine.Replace("CreatedDateTime","Date")
         #Replace "UserPrincipalName" with "Username" in file
         $NewfirstLine = $NewfirstLine.Replace("UserPrincipalName","Username")
+
 
         #Replace 1st line of string
         $x = Get-Content $ScriptGeneratedMScsvPath
@@ -145,6 +148,7 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
     $Date = $_.Date
     $IP = $_.IP
     $Username = $_.Username
+    $OS = $_.OS
     write-host "Working for: "$IP
     $URL = "https://vpnapi.io/api/"+$IP+"?key="+$APIKey
     Try {
@@ -171,6 +175,7 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
         "Date (UTC)" = $Date;
         username = $Username;
         IP = $IP;
+        OS = $OS;
         VPN = $Curl.security.vpn;
         TOR = $Curl.security.tor;
         Country = $Curl.location.country;
