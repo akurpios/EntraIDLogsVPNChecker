@@ -17,7 +17,8 @@ do{
         $APIKey = Read-Host -Prompt "Enter your VPNAPI.io API Key: " #Prompt for VPNAPI.io API Key
 
         $MScsvPath = Read-Host -Prompt "Enter your Microsoft report CSV path without quotes: " #Prompt for RAW InteractiveSignIns export file
-        $RootdirectoryPath = Split-Path -Path $MScsvPath #Get RAW InteractiveSignIns file location
+        #$RootdirectoryPath = Split-Path -Path $MScsvPath #Get RAW InteractiveSignIns file location
+        $RootdirectoryPath = "C:\Support\Scripts\EntraIDLogsVPNChecker"#Get script root file location
         New-Item -Path $RootdirectoryPath -Name $CurrentDate -ItemType "directory" #Create new folder for this job
         $directoryPath = "$RootdirectoryPath\$CurrentDate" #Set work folder
         Write-host "`n`nDirectory path: " $directoryPath "`n`n" #Display work folder
@@ -38,12 +39,14 @@ do{
         [regex]$pattern = "Incoming token type"
         $NewfirstLine = $pattern.replace($OldfirstLine, "Token", 1) 
 
-        #Replace "IP Address" with "IP" in file
-        $NewfirstLine = $NewfirstLine.Replace("IP address","IP")
-        #Replace "Date (UTC)" with "Date" in file
-        $NewfirstLine = $NewfirstLine.Replace("Date (UTC)","Date")
-        #Replace "Operating System" with "OS" in file
-        $NewfirstLine = $NewfirstLine.Replace("Operating System","OS")
+        #Replace "IpAddress" with "IP" in file
+        $NewfirstLine = $NewfirstLine.Replace("IpAddress","IP")
+        #Replace "CreatedDateTime" with "Date" in file
+        $NewfirstLine = $NewfirstLine.Replace("CreatedDateTime","Date")
+        #Replace "UserPrincipalName" with "Username" in file
+        $NewfirstLine = $NewfirstLine.Replace("UserPrincipalName","Username")
+        #Replace "appDisplayName" with "APP" in file
+        $NewfirstLine = $NewfirstLine.Replace("appDisplayName","APP")
 
         #Replace 1st line of string
         $x = Get-Content $MScsvPath
@@ -110,7 +113,7 @@ do{
         $SetDate = Get-Date($SetDate) -format yyyy-MM-dd
 
         #Get AzureAD data
-        $AADLogsarray = Get-AzureADAuditSignInLogs -Filter "createdDateTime gt $SetDate" | Select CreatedDateTime, UserPrincipalName, IpAddress,@{Name = 'OS'; Expression = {$_.DeviceDetail.OperatingSystem}}
+        $AADLogsarray = Get-AzureADAuditSignInLogs -Filter "createdDateTime gt $SetDate" | Select CreatedDateTime, UserPrincipalName, appDisplayName, IpAddress, Status, @{Name = 'OS'; Expression = {$_.DeviceDetail.OperatingSystem}}
         $AADLogsarray | Export-Csv $ScriptGeneratedMScsvPath –NoTypeInformation
         Disconnect-AzureAD
         
@@ -123,6 +126,8 @@ do{
         $NewfirstLine = $NewfirstLine.Replace("CreatedDateTime","Date")
         #Replace "UserPrincipalName" with "Username" in file
         $NewfirstLine = $NewfirstLine.Replace("UserPrincipalName","Username")
+        #Replace "appDisplayName" with "APP" in file
+        $NewfirstLine = $NewfirstLine.Replace("appDisplayName","APP")
 
 
         #Replace 1st line of string
@@ -149,6 +154,8 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
     $IP = $_.IP
     $Username = $_.Username
     $OS = $_.OS
+    $APP = $_.APP
+    $STATUS = $_.Status
     write-host "Working for: "$IP
     $URL = "https://vpnapi.io/api/"+$IP+"?key="+$APIKey
     Try {
@@ -176,6 +183,8 @@ Import-Csv $UniqueTempMScsvPath | ForEach-Object {
         username = $Username;
         IP = $IP;
         OS = $OS;
+        Status = $STATUS;
+        APP = $APP;
         VPN = $Curl.security.vpn;
         TOR = $Curl.security.tor;
         Country = $Curl.location.country;
